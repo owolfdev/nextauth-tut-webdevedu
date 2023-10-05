@@ -1,24 +1,49 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import GoogleProvider from "next-auth/providers/google";
+import { compare } from "bcrypt";
+import { sql } from "@vercel/postgres";
+
 const handler = NextAuth({
+  session: {
+    strategy: "jwt",
+  },
+  pages: {
+    signIn: "/login",
+  },
   providers: [
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID as string,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+    }),
     CredentialsProvider({
       credentials: {
         email: {},
         password: {},
       },
       async authorize(credentials, req) {
-        const user = { id: "1", email: "jsmith@example.com" };
+        //
+        const response = await sql`
+        SELECT * FROM users WHERE email=${credentials?.email}`;
+        const user = response.rows[0];
 
-        if (user) {
-          // Any object returned will be saved in `user` property of the JWT
-          return user;
-        } else {
-          // If you return null then an error will be displayed advising the user to check their details.
-          return null;
+        const passwordCorrect = await compare(
+          credentials?.password || "",
+          user.password
+        );
 
-          // You can also Reject this callback with an Error thus the user will be sent to the error page with the error message as a query parameter
+        console.log("handler");
+
+        console.log("password correct", { passwordCorrect });
+
+        if (passwordCorrect) {
+          return {
+            id: user.id,
+            email: user.email,
+          };
         }
+
+        return null;
       },
     }),
   ],

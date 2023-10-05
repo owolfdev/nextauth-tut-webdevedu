@@ -22,7 +22,7 @@ export default function Form() {
     >
       <input name="email" className="border border-black" type="email" />
       <input name="password" className="border border-black" type="password" />
-      <button className="text-white" type="submit">
+      <button className="" type="submit">
         Register
       </button>
     </form>
